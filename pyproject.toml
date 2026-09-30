@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "first-snow"
+version = "0.1.0"
+description = "서울 첫눈 알리미 - 30년 관측 데이터 기반 첫눈 가능성 예측"
+requires-python = ">=3.10"
+dependencies = [
+    "pandas",
+    "numpy",
+    "scikit-learn",
+    "joblib",
+    "requests",
+]
+
+[project.optional-dependencies]
+dev = ["jupyter", "matplotlib"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
