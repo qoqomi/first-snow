@@ -35,10 +35,20 @@
 - **최저기온 2°C 이하는 눈의 필수 조건에 가깝다**: 눈 온 날의 99%가 만족했고, 이 조건을 만족하기 전에 첫눈이 온 해는 30년 중 한 번도 없음
 - 눈 오는 날은 **차고 건조한 북서풍 공기**가 들어온 날 (이슬점 -7°C vs 비 5°C, 북서풍 58% vs 37%)
 
-### 3. 첫눈은 "경계에 있는 사건"이다
-- 일별 데이터로 만든 비/눈 판별 모델은 강수일 전체에서 정확도 90%지만, **첫눈은 10번 중 5번만** 맞혔다
+### 3. 첫눈은 "경계에 있는 사건"이다 → 시간별 데이터 + 습구온도로 해결
+- 일별 데이터로 만든 v0 모델은 강수일 전체에서 정확도 90%지만, **첫눈은 10번 중 5번만** 맞혔다
 - 놓친 첫눈은 모두 **새벽에 잠깐 눈이 오고 낮에는 풀린 날** → 하루 평균으로는 잡을 수 없다
-- → 시간별 데이터로 모델을 개선 중
+- 시간별 관측으로 **눈이 내린 그 시간의 습구온도**를 쓴 v1 모델로 개선했다
+  (건조한 공기에서는 기온 3°C에서도 눈이 온다 - 2020-12-10 첫눈: 기온 3.5°C, 습구온도 0.0°C)
+
+| 평가: 2016/17~2025 시즌 | v0 (일별) | **v1 (시간별)** |
+|---|---|---|
+| 정확도 | 90.3% | **96.0%** |
+| AUC | 0.965 | **0.994** |
+| **첫눈 적중** | 5/10 | **9/10** |
+| **헛알림** (첫눈 전 비 온 172일 중) | 1번 | **0번** |
+
+> 실제 관측값으로 평가한 결과입니다. 서비스에서는 예보값이 들어가므로 2026년 시즌 실전 결과로 다시 검증합니다.
 
 ## 구조
 
@@ -57,7 +67,7 @@
 
 - [x] 30년 관측 데이터 탐색 및 첫눈 조건 분석 → [`notebooks/first_snow_v2.ipynb`](notebooks/first_snow_v2.ipynb)
 - [x] 비/눈 판별 모델 v0 (일별) → [`notebooks/snow_model_daily.ipynb`](notebooks/snow_model_daily.ipynb)
-- [ ] 비/눈 판별 모델 v1 (시간별)
+- [x] 비/눈 판별 모델 v1 (시간별) → [`notebooks/snow_model_hourly.ipynb`](notebooks/snow_model_hourly.ipynb)
 - [ ] 기상청 단기예보 API 연동
 - [ ] Streamlit 대시보드
 - [ ] 자동 실행 + 알림
@@ -70,10 +80,18 @@ python -m venv .venv
 .venv\Scripts\activate          # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
 
-python scripts/train_daily_model.py   # 모델 학습 → models/
+python scripts/train_daily_model.py   # v0 (일별) 학습 → models/
+
+# v1 (시간별): 공공데이터포털 API 키가 필요합니다
+copy .env.example .env                # .env에 KMA_API_KEY 입력
+python scripts/download_asos_hourly.py   # 서울 ASOS 시간자료 1996~2025 → data/hourly/
+python scripts/train_hourly_model.py     # v1 학습 → models/
 ```
 
 ## 데이터
 
 - 기상청 기상자료개방포털 ASOS 종관기상관측 일자료 (서울, 지점 108), 1996-01-01 ~ 2025-12-31
+- 기상청 ASOS 시간자료 조회서비스 (공공데이터포털 API), 1996~2025
+  - 1996~1999년은 일기현상 코드가 없어서 v1 학습에는 2000~2025년을 사용
+  - 일부 현상 코드는 맨 앞 0이 빠진 채 기록되어 있어 보정 (`01` → `1` 등)
 - 첫눈 판정: 관측 기사(일기 현상)에 눈·진눈깨비·소낙눈·싸락눈·가루눈이 9월 1일 이후 처음 기록된 날

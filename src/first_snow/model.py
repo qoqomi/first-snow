@@ -5,7 +5,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 from .config import MODEL_DIR
-from .features import FEATURES, daily_features
+from .features import FEATURES, daily_features, hourly_features
 
 # 눈이 올 수 있는 달 (10월 ~ 이듬해 4월)
 SNOW_SEASON_MONTHS = [10, 11, 12, 1, 2, 3, 4]
@@ -23,12 +23,20 @@ def build_model():
     return make_pipeline(StandardScaler(), LogisticRegression())
 
 
-def save_model(model, name, meta=None):
+def save_model(model, name, meta=None, features=FEATURES):
     MODEL_DIR.mkdir(exist_ok=True)
     path = MODEL_DIR / f"{name}.joblib"
-    joblib.dump({"model": model, "features": FEATURES, "meta": meta or {}}, path)
+    joblib.dump({"model": model, "features": list(features), "meta": meta or {}}, path)
     return path
 
 
 def load_model(name):
     return joblib.load(MODEL_DIR / f"{name}.joblib")
+
+
+def hourly_training_set(hourly):
+    """눈 시즌의 강수 시간만 골라 (Feature, 눈 여부)를 만든다. 현상코드가 없는 연도는 제외된다."""
+    hours = hourly[(hourly["강수"] == True) & hourly["일시"].dt.month.isin(SNOW_SEASON_MONTHS)]  # noqa: E712
+    X = hourly_features(hours)
+    ok = X.notna().all(axis=1)
+    return hours[ok], X[ok], hours.loc[ok, "눈"].astype(int)

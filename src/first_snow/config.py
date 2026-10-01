@@ -19,5 +19,14 @@ RAIN_KINDS = ["비", "이슬비", "소나기"]
 SNOW_PATTERN = r"\{(?:" + "|".join(SNOW_KINDS) + r")\}"
 PRECIP_PATTERN = r"\{(?:" + "|".join(RAIN_KINDS + SNOW_KINDS) + r")\}"
 
+# ASOS 시간자료의 국내식 일기현상 코드 (dmstMtphNo, 2자리씩 이어붙여 기록됨)
+# 2000~2025년 시간자료를 같은 날 일자료 기사와 맞춰 보고 확인한 값.
+# 일자료 첫눈 기준(SNOW_KINDS)과 같게 눈 계열을 모두 포함하고, 우박류(12~14)는 제외한다.
+HOURLY_RAIN_CODES = {"01": "비", "02": "이슬비", "04": "소나기"}
+HOURLY_SNOW_CODES = {
+    "05": "눈", "06": "진눈깨비", "08": "소낙눈",
+    "09": "소낙성진눈깨비", "10": "싸락눈", "11": "가루눈",
+}
+
 # 첫눈 시즌: 9월 1일부터 센다
 SEASON_START_MONTH = 9
